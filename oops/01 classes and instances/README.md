@@ -1,146 +1,194 @@
-# Classes & Instances — Interview Prep
+# Classes & Instances — Theory & Revision Notes
 
-Interview-focused revision on Python OOP fundamentals — classes, instances, dunder methods, class/static methods, and design patterns.
+Python OOP fundamentals — classes, instances, dunder methods, class/static methods, and design patterns. These notes explain the *theory* first; use them as a primer before attempting interview questions.
 
 ---
 
 ## Topic 1 — `topic1.py` (Basic Class & Instance)
 
-### Common Interview Questions
+### Core Concepts
 
-**Q: What happens when you call `Book("The Hobbit", "J.R.R. Tolkien", 310)`?**
-- Python allocates memory, calls `__new__`, then calls `__init__` with the arguments.
-- `__init__` sets instance attributes (`self.title`, `self.author`, `self.pages`).
-- `self` is the newly created instance — Python passes it automatically.
+**What is a class?**
+- A class is a **blueprint** for creating objects. It bundles data (attributes) and behavior (methods) together.
+- Defined with the `class` keyword. By convention, class names use `PascalCase`.
 
-**Q: What is the difference between `__init__` and `__new__`?**
-- `__new__` creates the object (returns a new instance). Rarely overridden.
-- `__init__` initializes the object (sets attributes). Used 99% of the time.
-- `__new__` is called first, then `__init__`.
+**What is an instance?**
+- An instance is a **concrete object** created from a class. Each instance has its own set of instance attributes.
 
-**Q: What is `self`?**
-- `self` is the instance itself. It's a convention, not a keyword — you could name it `this`, but don't.
-- Python passes the instance as the first argument automatically. The method definition must accept it.
+**Object creation flow (`__new__` → `__init__`):**
+1. `__new__` — Allocates memory and returns a new object. Called first. Rarely overridden.
+2. `__init__` — Initializes the newly created object. Sets up instance attributes. Returns `None`.
+3. The instance is automatically passed as the first argument (`self`) to `__init__`.
 
-**Q: What is `__str__` and when is it called?**
-- Called by `print()`, `str()`, and f-strings.
-- Must return a string. Should be human-readable.
-- Falls back to `__repr__` if not defined.
+**`self` — The instance reference:**
+- `self` is a convention (not a keyword). It refers to the current instance.
+- Python automatically passes the instance as the first argument when you call a method on an object.
+- Inside the class, you use `self` to access instance attributes and other instance methods.
 
-**Q: How do you know if a method should be an instance method vs something else?**
-- If it needs `self` (instance data), it's an instance method.
-- If it needs `cls` (class data), it's a class method (`@classmethod`).
-- If it needs neither, but is conceptually related, it's a static method (`@staticmethod`).
+**The `__str__` method:**
+- Called by `print()`, `str()`, and f-strings to produce a human-readable string.
+- Must return a string. If not defined, Python falls back to `__repr__`.
 
-### Interview Edge Cases
+### Instance Methods
+- Regular methods defined inside a class that take `self` as the first parameter.
+- They operate on **instance data** — the attributes stored on `self`.
 
-- **Mutable default arguments in `__init__`** — A classic trap. Never use `def __init__(self, items=[])` — the list is shared across all instances.
-- **`self` is not a keyword** — You could use any name, but every Python dev expects `self`.
-- **`__init__` can return only `None`** — Returning anything else raises `TypeError`.
+### Key Design Points
+
+| Concept | Explanation |
+|---------|-------------|
+| `__new__` | Creates the object. Returns a new instance. Rarely used. |
+| `__init__` | Initializes the object. Sets attributes. Used 99% of time. |
+| `self` | The instance itself. Passed automatically. Convention, not keyword. |
+| `__str__` | Human-readable output for `print()`, `str()`, f-strings. |
+
+### Common Pitfalls
+- **Mutable default arguments:** `def __init__(self, items=[])` evaluates the list once at definition time — all instances share the same list.
+- **`__init__` must return `None`:** Returning a non-`None` value raises `TypeError`.
+- **`self` naming:** While you could name it anything, always use `self` for readability.
 
 ---
 
 ## Topic 2 — `topic2.py` (Class vs Instance Attributes)
 
-### Common Interview Questions
+### Core Concepts
 
-**Q: What is the difference between a class attribute and an instance attribute?**
-- **Class attribute:** Defined in the class body, shared by all instances. Accessed as `ClassName.attr` or `self.attr` (but `self.attr` can shadow it).
-- **Instance attribute:** Set on `self` in `__init__` (or anywhere). Unique to each instance.
+**Class Attributes:**
+- Defined directly inside the class body, outside any method.
+- **Shared** across all instances of the class.
+- Accessed via `ClassName.attribute` or `self.attribute` (but `self` can shadow it).
+- Useful for constants, default values, counters shared across all instances.
 
-**Q: What happens when you access `self.discount_rate` vs `Product.discount_rate`?**
-- `self.discount_rate` — Python first checks instance attributes, then class attributes, then parent classes.
-- `Product.discount_rate` — Direct class access, skips instance lookup.
+**Instance Attributes:**
+- Set on `self`, typically inside `__init__`.
+- **Unique** to each instance.
+- Accessed via `self.attribute`.
 
-**Q: How would you implement a counter that tracks how many objects of a class were created?**
-```python
-class Product:
-    count = 0
-    def __init__(self, name):
-        self.name = name
-        Product.count += 1
+### Attribute Lookup Order (MRO)
 ```
-
-**Q: Can you modify a class attribute through an instance?**
-```python
-obj.discount_rate = 0.2   # Creates a NEW instance attribute, shadows the class attribute
-Product.discount_rate = 0.2  # Modifies the actual class attribute
+Instance → Class → Parent classes
 ```
+Python follows the **Method Resolution Order (MRO)** when looking up an attribute:
+1. Check instance `__dict__` first.
+2. If not found, check class `__dict__`.
+3. If not found, check parent classes in MRO order.
 
-### Interview Edge Cases
+### The Shadowing Trap
 
-- **Shadowing trap** — Writing `self.x = val` when `x` is a class attribute doesn't modify the class attribute. It creates a new instance attribute that shadows it.
-- **Mutable class attributes** — If a class attribute is mutable (list, dict), modifying it via any instance affects all instances. This is a common bug.
-- **Lookup order** — Instance → Class → Parent classes. Python's MRO (Method Resolution Order) determines the search path.
+```python
+obj.x = val   # Creates a NEW instance attribute that shadows the class attribute
+Class.x = val # Modifies the actual class attribute
+```
+- Assigning to `self.x` never modifies the class attribute — it creates or updates an instance attribute that shadows the class one.
+
+### Mutable Class Attributes
+- If a class attribute is a **mutable** object (list, dict, set), modifying it *through* any instance affects all instances — because the mutation happens on the shared object itself.
+- This is a common source of bugs. Reassigning (`self.x = [1,2]`) creates a new instance attribute; mutating (`self.x.append(3)`) modifies the shared class attribute.
+
+### Key Points
+
+| Concept | Class Attribute | Instance Attribute |
+|---------|----------------|-------------------|
+| Where defined | In class body, outside methods | On `self`, usually in `__init__` |
+| Scope | Shared by all instances | Unique per instance |
+| Shadowing | Can be shadowed by instance attr | Always takes priority in lookup |
+| Modification | `ClassName.attr = val` | `self.attr = val` |
 
 ---
 
 ## Topic 3 — `topic3.py` (`__str__` vs `__repr__`)
 
-### Common Interview Questions
+### Core Concepts
 
-**Q: What is the difference between `__str__` and `__repr__`?**
-| `__str__` | `__repr__` |
-|---|---|
-| For end users | For developers |
-| Called by `print()`, `str()` | Called by `repr()`, REPL, debuggers |
-| Should be readable | Should be unambiguous |
-| Falls back to `__repr__` | Does **not** fall back to `__str__` |
+**`__str__` — For end users:**
+- Called by `print()`, `str()`, and f-strings (`f"{obj}"`).
+- Should return a **readable**, user-friendly string.
+- If `__str__` is not defined, Python falls back to `__repr__`.
 
-**Q: What is the "official" guideline for `__repr__`?**
-- Should return a string that could be used to recreate the object. E.g., `VideoGame(title='Mario', genre='Platformer', rating=4)`.
-- If that's not practical, at least include the object's type and key state in angle brackets: `<VideoGame: Mario>`.
+**`__repr__` — For developers:**
+- Called by `repr()`, the REPL, debuggers, and container `print()` calls.
+- Should return an **unambiguous** string, ideally one that could recreate the object.
+- Does **not** fall back to `__str__`.
 
-**Q: When would you define only `__repr__` and not `__str__`?**
-- If the repr is already readable enough for both audiences. `__str__` falls back to `__repr__` when absent, so one method can serve both purposes.
+### The Official Guideline
+- `__repr__` should be **eval-able** where practical: `VideoGame(title='Mario', genre='Platformer', rating=4)`.
+- If that's not feasible, use angle brackets with type and key info: `<VideoGame: Mario>`.
 
-**Q: What does the REPL use?**
-- The REPL calls `repr()`, so `__repr__` determines what you see when you type an object's name in the REPL.
+### When to Define Only `__repr__`
+- If the repr is already readable enough for both developers and end users.
+- Since `__str__` falls back to `__repr__`, one method can serve both purposes.
 
-### Interview Edge Cases
+### Container Behavior (Important)
+- When you print a list/tuple/dict of objects, Python calls `repr()` on each element, **not** `str()`.
+  ```python
+  print([game])  # Uses __repr__, not __str__
+  ```
+- This is because containers use `repr()` for their elements.
 
-- **Collections use `repr` for their elements** — When you print a list, it calls `repr()` on each element, not `str()`. So `print([game])` uses `__repr__`, not `__str__`.
-- **`__repr__` should be unambiguous** — If you can't make it eval-able, at least include type + id or key fields in a standard format.
-- **F-strings use `__str__`** — `f"{game}"` calls `__str__`. Use `f"{game!r}"` to force `__repr__`.
+### String Formatting
+
+| Expression | Method Called |
+|------------|--------------|
+| `print(obj)` | `__str__` |
+| `str(obj)` | `__str__` |
+| `f"{obj}"` | `__str__` |
+| `f"{obj!r}"` | `__repr__` |
+| `repr(obj)` | `__repr__` |
+| REPL (typing `obj`) | `__repr__` |
+| `print([obj])` | `repr()` on elements → `__repr__` |
 
 ---
 
 ## Topic 4 — `topic4.py` (Class Methods, Static Methods & Alternative Constructors)
 
-### Common Interview Questions
+### Core Concepts
 
-**Q: What is the difference between `@classmethod` and `@staticmethod`?**
+**Instance Methods (`self`):**
+- Receive `self` — the instance.
+- Can access and modify instance attributes.
+- Default method type. Use when logic depends on instance data.
 
-| `@classmethod` | `@staticmethod` |
-|---|---|
-| Receives `cls` (the class) | Receives nothing extra |
-| Can access/modify class state | Cannot access class or instance state |
-| Used for alternative constructors | Used for utility functions |
-| Can be inherited and will use the child class | Same, but doesn't know which class called it |
+**Class Methods (`@classmethod`, `cls`):**
+- Receive `cls` — the class itself (not the instance).
+- Can access and modify **class-level** state (class attributes).
+- Commonly used as **alternative constructors** — factory methods that create instances differently than `__init__`.
+- `cls` is the **calling class**, so with inheritance, `cls` changes to the child class.
 
-**Q: What is an alternative constructor?**
-- A `@classmethod` that creates instances in a different way than `__init__`.
-- Example: `BankAccount.create_account(name, balance)` or `BankAccount.from_string("Alice-500")`.
-- Convention: use `from_*` or `create_*` naming.
+**Static Methods (`@staticmethod`):**
+- Receive neither `self` nor `cls`.
+- Behave like regular functions but live in the class namespace.
+- Used for utility functions conceptually tied to the class.
+- Cannot access class or instance state directly (though you can reference `ClassName.attr` explicitly).
 
-**Q: When should you use `@staticmethod` vs a standalone function?**
-- `@staticmethod` goes inside the class if the function is conceptually tied to the class (e.g., `BankAccount.is_valid_balance`).
-- Use a standalone function if it's general-purpose and not tightly coupled.
+### Comparison
 
-**Q: How does `@classmethod` work with inheritance?**
-- `cls` is the actual class that the method is called on, not the class where it's defined.
-- So if `SavingsAccount.create_account(...)` is called, `cls` is `SavingsAccount`, not `BankAccount`.
+| Aspect | `@classmethod` | `@staticmethod` |
+|--------|---------------|-----------------|
+| First param | `cls` (the class) | Nothing extra |
+| Access class state | Yes (via `cls`) | No (must hardcode class name) |
+| Access instance state | No | No |
+| Inheritance behavior | `cls` follows child class | No awareness of caller |
+| Use case | Alternative constructors, class-level state mgmt | Utility/logic tied to class |
 
-**Q: What does the underscore prefix mean in `_next_account_number`?**
-- Python convention for "internal use" / "private". Not enforced by the interpreter.
-- `_var` — "protected" (internal use, but accessible).
-- `__var` — name mangling (`_ClassName__var`), used to avoid subclass collisions.
+### Alternative Constructors (Factory Pattern)
+- A `@classmethod` that returns a new instance.
+- Provides an alternative way to create objects besides `__init__`.
+- Naming convention: `from_*` or `create_*`.
+- Examples: `BankAccount.create_account(name, balance)`, `BankAccount.from_string("Alice-500")`.
 
-### Interview Edge Cases
+### Naming Conventions for "Private" Attributes
 
-- **`@classmethod` vs inheritance gotcha** — If a `@classmethod` stores state on `cls`, each subclass gets its own copy of that state (because `cls` changes). This can be intentional or a bug.
-- **When to NOT use `@staticmethod`** — If you find yourself referencing `ClassName` inside the method (like `BankAccount.minimum_balance`), consider whether the logic should be a class method or whether the reference should be `type(self).minimum_balance`.
-- **`@classmethod` as a factory pattern** — Alternative constructors (`from_string`, `from_dict`, `from_csv`) are a common and clean design pattern in Python.
+| Prefix | Meaning | Behavior |
+|--------|---------|----------|
+| `_var` | "Protected" / internal use | Convention only. Accessible from outside. |
+| `__var` | "Private" | Name mangling: `_ClassName__var`. Prevents accidental subclass collisions. |
+| `__var__` | Dunder / magic method | Reserved for Python's special methods. |
+
+### Key Design Notes
+
+- **`@classmethod` with inheritance:** Each subclass gets its own `cls`, so class-level state stored via `cls.attr` is independent per subclass.
+- **`@staticmethod` vs standalone function:** Use `@staticmethod` when the function is conceptually tied to the class (e.g., `BankAccount.is_valid_balance`). Use a standalone function if it's general-purpose.
+- **When to NOT use `@staticmethod`:** If you find yourself hardcoding `ClassName` inside a static method (e.g., `BankAccount.minimum_balance`), consider whether it should be a `@classmethod` instead.
 
 ---
 
@@ -160,12 +208,13 @@ Product.discount_rate = 0.2  # Modifies the actual class attribute
 
 ---
 
-## Gotchas to Remember
+## Common Gotchas
 
-1. `self.x = val` **shadows** the class attribute — doesn't modify it.
-2. Mutable class attributes (lists, dicts) are **shared** — mutations affect all instances.
-3. `__str__` falls back to `__repr__` — but not vice versa.
-4. `print([obj])` uses `repr()` on elements, not `str()`.
-5. `@classmethod` receives the **calling class** via `cls`, which changes with inheritance.
-6. `__init__` must return `None` — returning anything else raises `TypeError`.
-7. Default mutable arguments (`def __init__(self, x=[])`) are **evaluated once at definition time**, not per-call.
+1. **Shadowing:** `self.x = val` shadows the class attribute — doesn't modify it.
+2. **Mutable class attributes:** Lists/dicts as class attributes are **shared** — mutations affect all instances.
+3. **`__str__` fallback:** `__str__` falls back to `__repr__` — but not vice versa.
+4. **Containers use `repr`:** `print([obj])` calls `repr()` on elements, not `str()`.
+5. **`@classmethod` inheritance:** `cls` is the **calling class**, which changes with inheritance.
+6. **`__init__` return:** Must return `None` — returning anything else raises `TypeError`.
+7. **Mutable defaults:** `def __init__(self, x=[])` is evaluated once at definition time, not per-call.
+8. **Attribute lookup order:** Instance → Class → Parent classes (MRO).
