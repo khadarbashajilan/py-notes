@@ -1,86 +1,64 @@
 class BankAccount:
-    def __init__(self, account_number, balance):
-        # Private attribute — set directly since account_number is read-only
-        self._account_number = account_number
-        
-        # Uses the setter — validation runs automatically
-        self.balance = balance
+    """Demonstrates read-only, validated, and computed properties."""
 
-    # ---------- Read-Only Property ----------
+    def __init__(self, account_number, balance):
+        """Initialize with a read-only account number and a validated balance."""
+        self._account_number = account_number
+        self.balance = balance  # Uses setter — validation runs automatically
+
     @property
     def account_number(self):
-        """Returns the account number. Cannot be modified after creation."""
+        """Return the read-only account number. No setter — cannot be modified."""
         return self._account_number
-    # No setter defined — trying to assign raises AttributeError
 
-    # ---------- Property with Getter and Setter ----------
     @property
     def balance(self):
-        """Returns the current balance."""
+        """Return the current balance."""
         return self._balance
 
     @balance.setter
     def balance(self, amount):
-        """Sets the balance after validating it's not negative."""
+        """Set the balance after validating it is not negative."""
         if amount < 0:
             raise ValueError("Can't be negative")
         self._balance = amount
         print("Updated")
 
-    # ---------- Computed Property (No Storage) ----------
     @property
     def is_overdrawn(self):
-        """Returns True if balance is zero, False otherwise."""
+        """Return True if balance is exactly zero, else False."""
         return self._balance == 0
 
 
-# Create an account with zero balance
-ba = BankAccount(123, 0)
-
-# Read-only property — works fine
-print(ba.account_number)  # 123
-
-# Computed property — calculated on the fly
-print(ba.is_overdrawn)    # True
-
-# Would raise errors if uncommented:
-# ba.account_number = 456  # AttributeError: can't set attribute
-# ba.balance = -100        # ValueError: Can't be negative
-
-
-
 class Student:
+    """Demonstrates read-only property, validated setter, and computed properties."""
+
     def __init__(self, name, grade):
-        # Read-only — set private variable directly (no setter exists)
+        """Initialize with a read-only name and a validated numeric grade."""
         self._name = name
+        self.grade = grade  # Uses setter — validation runs automatically
 
-        # Uses the setter — validation runs automatically
-        self.grade = grade
-
-    # ---------- Read-Only Property ----------
     @property
     def name(self):
-        """Returns student name. Cannot be modified."""
+        """Return the read-only student name. No setter — cannot be modified."""
         return self._name
 
-    # ---------- Property with Validation ----------
     @property
     def grade(self):
-        """Returns the numeric grade."""
+        """Return the numeric grade."""
         return self._grade
 
     @grade.setter
     def grade(self, g):
-        """Validates and sets the grade (0-100)."""
+        """Set the grade after validating it is between 0 and 100."""
         if g < 0 or g > 100:
             raise ValueError("Grade must be between 0 and 100")
         self._grade = g
         print("Updated")
 
-    # ---------- Computed Property (NO SETTER, NO STORAGE) ----------
     @property
     def letter_grade(self):
-        """Computes letter grade from numeric grade."""
+        """Compute and return letter grade (A/B/C/D/F) from numeric grade."""
         if self._grade >= 90:
             return 'A'
         elif self._grade >= 80:
@@ -92,76 +70,131 @@ class Student:
         else:
             return 'F'
 
-    # ---------- Computed Property ----------
     @property
     def is_passing(self):
-        """Returns True if grade is passing (≥60)."""
+        """Return True if grade is 60 or above."""
         return self._grade >= 60
 
 
 class Rectangle:
+    """Demonstrates validated properties and computed properties (area, perimeter, is_square)."""
+
     def __init__(self, width, height):
-        # Uses the setter — validation runs automatically
-        self.width = width
-        self.height = height
-    
-    # ---------- Property with Getter and Setter ----------
+        """Initialize rectangle with validated width and height."""
+        self.width = width    # Uses setter — validation runs automatically
+        self.height = height  # Uses setter — validation runs automatically
+
     @property
     def width(self):
-        """Returns the width of the rectangle."""
+        """Return the width."""
         return self._width
-    
+
     @width.setter
     def width(self, w):
-        """Sets the width after validating it's positive."""
+        """Set the width after validating it is positive."""
         if w <= 0:
             raise ValueError("Width must be positive")
         self._width = w
-    
-    # ---------- Property with Getter and Setter ----------
+
     @property
     def height(self):
-        """Returns the height of the rectangle."""
+        """Return the height."""
         return self._height
-    
+
     @height.setter
     def height(self, h):
-        """Sets the height after validating it's positive."""
+        """Set the height after validating it is positive."""
         if h <= 0:
             raise ValueError("Height must be positive")
         self._height = h
-    
-    # ---------- Computed Property (No Storage) ----------
+
     @property
     def area(self):
-        """Returns the area (width × height)."""
+        """Compute and return area (width × height)."""
         return self._width * self._height
-    
-    # ---------- Computed Property (No Storage) ----------
+
     @property
     def perimeter(self):
-        """Returns the perimeter 2 × (width + height)."""
+        """Compute and return perimeter (2 × (width + height))."""
         return 2 * (self._width + self._height)
-    
-    # ---------- Computed Property (No Storage) ----------
+
     @property
     def is_square(self):
-        """Returns True if width equals height, False otherwise."""
+        """Return True if width equals height."""
         return self._width == self._height
 
 
-# ---------- Testing ----------
-r = Rectangle(10, 5)
-print(r.width)       # 10
-print(r.height)      # 5
-print(r.area)        # 50
-print(r.perimeter)   # 30
-print(r.is_square)   # False
+def main():
+    """Test BankAccount, Student, and Rectangle property behavior."""
 
-# Updates work with validation
-r.width = 20
-print(r.area)        # 100 — automatically recalculated!
+    # ---------- BankAccount Tests ----------
+    print("=== BankAccount ===")
+    ba = BankAccount(123, 0)
+    assert ba.account_number == 123
+    assert ba.is_overdrawn is True
+    print("Test 1: Read-only account_number and computed is_overdrawn")
 
-# These would raise errors:
-# r.width = -5       # ValueError: Width must be positive
-# r.height = 0       # ValueError: Height must be positive
+    ba.balance = 500
+    assert ba.balance == 500
+    assert ba.is_overdrawn is False
+    print("Test 2: Balance update via setter")
+
+    # ---------- Student Tests ----------
+    print("\n=== Student ===")
+    s = Student("Alice", 85)
+    assert s.name == "Alice"
+    assert s.grade == 85
+    assert s.letter_grade == 'B'
+    assert s.is_passing is True
+    print("Test 3: Read-only name, validated grade, computed letter_grade and is_passing")
+
+    # Test validation
+    try:
+        Student("Bob", -5)
+        assert False
+    except ValueError:
+        print("Test 4: Negative grade rejected")
+
+    try:
+        Student("Bob", 150)
+        assert False
+    except ValueError:
+        print("Test 5: Over-100 grade rejected")
+
+    # ---------- Rectangle Tests ----------
+    print("\n=== Rectangle ===")
+    r = Rectangle(10, 5)
+    assert r.width == 10
+    assert r.height == 5
+    assert r.area == 50
+    assert r.perimeter == 30
+    assert r.is_square is False
+    print("Test 6: Valid rectangle with computed area, perimeter, is_square")
+
+    r.width = 20
+    assert r.area == 100
+    print("Test 7: Width update auto-recalculates area")
+
+    # Test validation
+    try:
+        Rectangle(-5, 10)
+        assert False
+    except ValueError:
+        print("Test 8: Negative width rejected")
+
+    try:
+        Rectangle(5, 0)
+        assert False
+    except ValueError:
+        print("Test 9: Zero height rejected")
+
+    # Test square detection
+    sq = Rectangle(7, 7)
+    assert sq.is_square is True
+    print("Test 10: Square correctly detected")
+
+    print("\nAll tests passed!")
+
+
+if __name__ == "__main__":
+    main()
