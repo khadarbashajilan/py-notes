@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from model import ProductCreate, ProductUpdate, ProductResponse
-from db import create_product, get_all_products, get_product, update_product, delete_product
+from db import create_product, get_all_products, get_product, update_product, patch_product, delete_product
 
 app = FastAPI()
 
@@ -21,8 +21,13 @@ def read(name: str):
 
 
 @app.put("/products/{name}", response_model=ProductResponse)
-def update(name: str, data: ProductUpdate):
+def update(name: str, data: ProductCreate):
     return update_product(name, data)
+
+
+@app.patch("/products/{name}", response_model=ProductResponse)
+def patch(name: str, data: ProductUpdate):
+    return patch_product(name, data)
 
 
 @app.delete("/products/{name}")

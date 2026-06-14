@@ -1,4 +1,4 @@
-# FastAPI Learning Journey — v1 to v4
+# FastAPI Learning Journey — v1 to v6
 
 A progressive roadmap from **beginner → intermediate** FastAPI developer. Each version builds on the previous, adding real-world patterns one step at a time.
 
@@ -71,7 +71,8 @@ v1/
 | POST | `/products` | Create product (auto-generates UUID) → 201 |
 | GET | `/products` | List all products |
 | GET | `/products/{name}` | Get product by name (case-insensitive) |
-| PUT | `/products/{name}` | Partially update product |
+| PUT | `/products/{name}` | Full replacement (all fields required) |
+| PATCH | `/products/{name}` | Partial update (only changed fields) |
 | DELETE | `/products/{name}` | Delete product by name |
 
 ### Project Structure
@@ -258,22 +259,203 @@ Request → Route Handler → Depends(get_db) → PostgreSQL
 
 ---
 
+## v5 — Auth with JWT + Alembic (Score: 7/10 — mid-level foundation)
+
+### What I Learned
+- Alembic — version control for database schema (migrations)
+- Hashing passwords with `passlib` + `bcrypt`
+- JWT (JSON Web Token) — creating and verifying tokens
+- `python-jose` — JWT encoding/decoding library
+- `Depends(get_current_user)` — protecting routes with auth
+- Register / Login flow — email + password → JWT
+- SQLAlchemy relationship between `User` and `Product`
+
+### What I Implemented
+- **Alembic setup** — `alembic init`, first migration for `users` table
+- **`auth.py`** — register + login logic with password hashing
+- **`jwt.py`** — `create_access_token()` and `verify_token()` utilities
+- **`POST /auth/register`** — create user (email, password)
+- **`POST /auth/login`** — verify credentials → return JWT
+- **`get_current_user`** dependency — extracts user from JWT on protected routes
+- **Protected product routes** — only authenticated users can create/update/delete
+- **`UserORM` model** — `id`, `email`, `password_hash`, `created_at`
+- **Relationship** — products optionally linked to a user
+
+### Key Files Added
+```
+v5/
+├── auth.py           # Register + login handlers
+├── jwt.py            # JWT create/verify utilities
+├── alembic/          # Migration directory
+│   ├── env.py
+│   └── versions/     # Auto-generated migration files
+├── alembic.ini       # Alembic config
+└── .env              # Added JWT_SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE
+```
+
+### Key Terminology
+| Term | Meaning |
+|------|---------|
+| **Alembic** | Database migration tool — version control for your schema |
+| **Migration** | A file describing schema changes (add table, add column) |
+| **JWT** | JSON Web Token — signed token containing user claims |
+| **`python-jose`** | Library for JWT creation and verification |
+| **`passlib`** | Password hashing library |
+| **`bcrypt`** | Strong password hashing algorithm |
+| **Hash** | One-way transformation of a password (can't reverse it) |
+| **`get_current_user`** | FastAPI dependency that validates JWT and returns user |
+| **Access token** | Short-lived JWT sent with each request to authenticate |
+
+### Auth Flow
+```
+Register → POST /auth/register → hash password → store user → return success
+Login    → POST /auth/login    → verify hash → create JWT → return token
+Request  → GET /products       → send JWT in header → verify → return data
+```
+
+### What Improved from v4
+- Users can register and log in
+- Routes are protected — only authenticated users can modify data
+- Passwords are hashed, never stored in plain text
+- Schema changes are version-controlled with Alembic
+
+### Limitations
+- Only email/password — no social login (Google, GitHub)
+- No tests for auth routes
+- No role-based permissions (admin vs user)
+- No refresh tokens
+
+---
+
+## v6 — OAuth2 + Production Patterns (Score: 9/10 — solid mid-level)
+
+### What I Learned
+- OAuth2 flow — Login with Google/GitHub
+- Third-party OAuth providers — redirect + callback pattern
+- Pagination — `?limit=&offset=` query parameters
+- Rate limiting — protecting the API from abuse
+- Health check endpoint — required for deployment orchestration
+- Background tasks — `BackgroundTasks` for non-blocking operations
+- Redis caching — reducing database load for frequent queries
+- `docker-compose` — running app + PostgreSQL + Redis together
+- Testing with auth — pytest + TestClient with JWT override
+
+### What I Implemented
+- **OAuth2 with Google** — `GET /auth/google` redirect + callback
+- **Pagination** — `GET /products?limit=10&offset=0` with metadata
+- **Rate limiting** — `slowapi` or custom middleware (per-user limits)
+- **`GET /health`** — returns DB + Redis status
+- **Background task** — welcome email on registration
+- **Redis caching** — cached product list with TTL invalidation
+- **`docker-compose.yml`** — app + PostgreSQL + Redis services
+- **Tests with auth** — `TestClient` + dependency override for `get_current_user`
+
+### Project Structure
+```
+v6/
+├── main.py             # Routes + middleware + lifespan
+├── db.py               # Async CRUD with pagination
+├── model.py            # Pydantic schemas + SQLAlchemy models
+├── database.py         # Engine, get_db()
+├── auth.py             # JWT + OAuth2 handlers
+├── jwt.py              # Token utilities
+├── oauth.py            # Google OAuth2 config + callback
+├── cache.py            # Redis connection + caching helpers
+├── tasks.py            # Background task functions
+├── settings.py         # pydantic-settings
+├── test_main.py        # Tests with authenticated client
+├── alembic/            # Migrations
+├── docker-compose.yml  # PostgreSQL + Redis + app
+├── Dockerfile
+├── .env.example
+├── .gitignore
+└── pyproject.toml
+```
+
+### Key Terminology
+| Term | Meaning |
+|------|---------|
+| **OAuth2** | Protocol for delegated authorization — "Login with Google" |
+| **Authorization code** | Temporary code from OAuth provider, exchanged for a token |
+| **Redirect URI** | Where the OAuth provider sends the user after login |
+| **Pagination** | Splitting results into pages with limit/offset or cursor |
+| **Rate limiting** | Restricting how many requests a user can make in a time window |
+| **`BackgroundTasks`** | FastAPI utility for running tasks after the response is sent |
+| **Redis** | In-memory data store — used for caching and rate limiting |
+| **TTL** | Time-To-Live — how long a cache entry stays valid |
+| **Docker Compose** | Tool to run multi-container apps (app + DB + Redis) |
+| **Health check** | Endpoint that reports if the service is healthy |
+
+### Production Patterns
+```
+                                  ┌──────────────┐
+                                  │   Client     │
+                                  └──────┬───────┘
+                                         │
+                           ┌─────────────▼──────────────┐
+                           │     Nginx / Reverse Proxy    │
+                           │  (rate limiting, SSL, etc.)  │
+                           └─────────────┬──────────────┘
+                                         │
+                    ┌────────────────────▼───────────────────┐
+                    │          FastAPI Application            │
+                    │  ┌──────────┐  ┌────────┐  ┌────────┐ │
+                    │  │   Auth   │  │  Prod  │  │ Health │ │
+                    │  │ (JWT+OAuth)│  │  CRUD  │  │   OK   │ │
+                    │  └──────────┘  └────────┘  └────────┘ │
+                    └────────┬──────────────┬────────────────┘
+                             │              │
+                    ┌────────▼──┐    ┌──────▼──────┐
+                    │ PostgreSQL │    │    Redis    │
+                    │ (persist)  │    │   (cache)   │
+                    └───────────┘    └─────────────┘
+```
+
+### What Improved from v5
+- Social login (Google/GitHub) — users don't need to create a new account
+- Pagination — API won't crash with 10,000 products
+- Rate limiting — API won't go down from abuse
+- Health check — devops can monitor the service
+- Background tasks — welcome emails, cleanup jobs
+- Redis caching — frequently accessed data is instant
+- Docker Compose — one command to start everything
+- Tests with auth — confidence that protected routes work
+
+### Limitations (next steps)
+- No WebSockets for real-time features
+- No GraphQL for flexible queries
+- No CI/CD pipeline
+- No cloud deployment (AWS/GCP/Azure)
+- No monitoring / alerting
+
+---
+
 ## Version Comparison
 
-| Feature | v1 | v2 | v3 | v4 |
-|---------|:--:|:--:|:--:|:--:|
-| RESTful routes | ✗ | ✓ | ✓ | ✓ |
-| Input validation | ✗ | ✓ | ✓ | ✓ |
-| Correct HTTP codes | ✗ | ✓ | ✓ | ✓ |
-| Persistence (DB) | ✗ | ✗ | ✓ | ✓ |
-| Async handlers | ✗ | ✗ | ✓ | ✓ |
-| Dependency Injection | ✗ | ✗ | ✗ | ✓ |
-| CORS | ✗ | ✗ | ✗ | ✓ |
-| Error handlers | ✗ | ✗ | ✗ | ✓ |
-| Logging | ✗ | ✗ | ✗ | ✓ |
-| Environment config | ✗ | ✗ | ✗ | ✓ |
-| `.gitignore` | ✗ | ✗ | ✗ | ✓ |
-| **Score** | **4/10** | **6/10** | **7/10** | **9/10** |
+| Feature | v1 | v2 | v3 | v4 | v5 | v6 |
+|---------|:--:|:--:|:--:|:--:|:--:|:--:|
+| RESTful routes | ✗ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Input validation | ✗ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Correct HTTP codes | ✗ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Persistence (DB) | ✗ | ✗ | ✓ | ✓ | ✓ | ✓ |
+| Async handlers | ✗ | ✗ | ✓ | ✓ | ✓ | ✓ |
+| Dependency Injection | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ |
+| CORS | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ |
+| Error handlers | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ |
+| Logging | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ |
+| Environment config | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ |
+| `.gitignore` | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ |
+| Alembic migrations | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ |
+| JWT auth | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ |
+| OAuth2 (Google/GitHub) | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| Pagination | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| Rate limiting | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| Health check | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| Background tasks | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| Redis caching | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| Docker Compose | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| Tests with auth | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| **Score** | **4/10** | **6/10** | **7/10** | **7/10** | **7/10** | **9/10** |
 
 ---
 
@@ -301,50 +483,85 @@ Request → Route Handler → Depends(get_db) → PostgreSQL
 | **`pydantic-settings`** | Reads config from `.env` files with validation |
 | **Lifespan** | FastAPI's startup/shutdown event system |
 | **Context manager** | `async with` block that auto-closes resources |
+| **Alembic** | Database migration tool — version control for your schema |
+| **Migration** | A file describing schema changes (add table, add column, etc.) |
+| **JWT** | JSON Web Token — signed token containing user identity claims |
+| **`python-jose`** | Library for JWT creation and verification |
+| **`passlib`** | Password hashing library |
+| **`bcrypt`** | Strong password hashing algorithm |
+| **Hash** | One-way transformation of a password (can't reverse it) |
+| **`get_current_user`** | FastAPI dependency that validates JWT and returns the user |
+| **Access token** | Short-lived JWT sent with each request to authenticate |
+| **OAuth2** | Protocol for delegated authorization — "Login with Google" |
+| **Authorization code** | Temporary code from OAuth provider, exchanged for a real token |
+| **Redirect URI** | Where the OAuth provider sends the user after successful login |
+| **Pagination** | Splitting results into pages with limit/offset |
+| **Rate limiting** | Restricting requests per user within a time window |
+| **`BackgroundTasks`** | FastAPI utility for running tasks after the response is sent |
+| **Redis** | In-memory data store — used for caching and rate limiting |
+| **TTL** | Time-To-Live — how long a cache entry stays valid |
+| **Docker Compose** | Tool to run multi-container apps together (app + DB + Redis) |
+| **Health check** | Endpoint that reports if the service is healthy and ready |
 
 ---
 
 ## Architecture Evolution
 
 ```
-v1:                   v2:                       v3:                        v4:
-┌──────────┐          ┌──────────┐              ┌──────────┐               ┌──────────┐
-│  main.py │          │  main.py │              │  main.py │               │  main.py │
-│ (routes) │          │ (routes) │              │ (routes) │               │ (routes) │
-│ (models) │          │          │              │   async  │               │   async  │
-│ (logic)  │          ├──────────┤              │ lifespan │               │ CORS     │
-└──────────┘          │  db.py   │              ├──────────┤               │ logging  │
-                      │ (logic)  │              │  db.py   │               │ handlers │
-                      ├──────────┤              │  async   │               │ Depends  │
-                      │ model.py │              │  no DI   │               ├──────────┤
-                      │ (schemas)│              ├──────────┤               │  db.py   │
-                      └──────────┘              │ model.py │               │  async   │
-                                                │ (schemas)│               │  with DI │
-                                                │ (ORM)    │               ├──────────┤
-                                                ├──────────┤               │ model.py │
-                                                │database  │               │ (schemas)│
-                                                │ .py      │               │ (ORM)    │
-                                                └──────────┘               ├──────────┤
-                                                                           │database  │
-                                                                           │ .py      │
-                                                                           │ (get_db) │
-                                                                           ├──────────┤
-                                                                           │settings  │
-                                                                           │ .py      │
-                                                                           └──────────┘
+v1:              v2:               v3:               v4:                v5:                    v6:
+┌──────────┐    ┌──────────┐      ┌──────────┐      ┌──────────┐       ┌───────────┐          ┌──────────────┐
+│  main.py │    │  main.py │      │  main.py │      │  main.py │       │  main.py  │          │   main.py    │
+│ (routes) │    │ (routes) │      │ (routes) │      │ (routes) │       │  (routes) │          │   (routes)   │
+│ (models) │    │          │      │   async  │      │   async  │       │   async   │          │    async     │
+│ (logic)  │    ├──────────┤      │ lifespan │      │ CORS     │       │  CORS     │          │   CORS       │
+└──────────┘    │  db.py   │      ├──────────┤      │ logging  │       │  logging  │          │   logging    │
+                │ (logic)  │      │  db.py   │      │ handlers │       │  handlers │          │   handlers   │
+                ├──────────┤      │  async   │      │ Depends  │       │  Depends  │          │   Depends    │
+                │ model.py │      │  no DI   │      ├──────────┤       │  JWT auth │          │   JWT+OAuth  │
+                │ (schemas)│      ├──────────┤      │  db.py   │       ├───────────┤          │   pagination │
+                └──────────┘      │ model.py │      │  async   │       │  db.py    │          │   rate limit │
+                                  │ (schemas)│      │  with DI │       │  auth.py  │          │   health     │
+                                  │ (ORM)    │      ├──────────┤       │  jwt.py   │          │   bg tasks   │
+                                  ├──────────┤      │ model.py │       ├───────────┤          ├──────────────┤
+                                  │database  │      │ (schemas)│       │ model.py  │          │  db.py       │
+                                  │ .py      │      │ (ORM)    │       │ (schemas) │          │  auth.py     │
+                                  └──────────┘      ├──────────┤       │ (ORM)     │          │  jwt.py      │
+                                                     │database  │       ├───────────┤          │  oauth.py    │
+                                                     │ .py      │       │database   │          │  cache.py    │
+                                                     │ (get_db) │       │ .py       │          │  tasks.py    │
+                                                     ├──────────┤       ├───────────┤          ├──────────────┤
+                                                     │settings  │       │ alembic/  │          │ model.py     │
+                                                     │ .py      │       │ .env      │          │ database.py  │
+                                                     └──────────┘       └───────────┘          │ alembic/     │
+                                                                                               │ settings.py  │
+                                                                                               │ test_main.py │
+                                                                                               │ docker-      │
+                                                                                               │ compose.yml  │
+                                                                                               └──────────────┘
 ```
 
 ---
 
 ## Final Thoughts
 
-This journey took me from writing a single-file prototype (v1) to a polished, professional-grade API with dependency injection and PostgreSQL (v4). Each version taught a core skill:
+This journey took me from writing a single-file prototype (v1) to a fully-featured, production-ready API with OAuth2, caching, and Docker Compose (v6). Each version taught a core skill:
 
 1. **v1** — Getting something working
 2. **v2** — Writing clean, validated REST APIs
 3. **v3** — Using databases and async properly (no DI)
 4. **v4** — Learning dependency injection, PostgreSQL, and infra polish
+5. **v5** — Authentication with JWT and schema migrations with Alembic
+6. **v6** — OAuth2, pagination, rate limiting, caching, and production patterns
 
-Building the same CRUD API with and without DI (v3 vs v4) was the fastest way to understand *why* the dependency injection pattern exists — and when to use each approach.
+The key insight from this progression is that each version adds exactly one or two new concepts — never overwhelming, always building on what came before.
 
-The next steps beyond v4 would be: authentication (JWT), background tasks, WebSockets, GraphQL, and cloud deployment (AWS/GCP/Azure).
+### Career Level by Version
+
+| Version | Level | Can do |
+|---------|-------|--------|
+| v1–v2 | Beginner | Build a basic CRUD API |
+| v3–v4 | Beginner → Junior | Build a persistent API with async, DI, PostgreSQL |
+| v5 | Junior → Mid | Add auth, migrations, user management |
+| v6 | Mid-level | Build a production-ready API with OAuth, caching, rate limiting |
+
+The next steps beyond v6 would be: WebSockets (real-time), GraphQL, microservices, Kubernetes, and cloud deployment (AWS/GCP/Azure).

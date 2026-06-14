@@ -11,11 +11,11 @@ A refactored product management API using in-memory storage with improved valida
 1. **Layered architecture** — `model.py` (schemas) → `db.py` (storage) → `main.py` (routes). Better separation than v1.
 2. **Pydantic field validators** — `@field_validator` catches empty names, empty descriptions, negative/zero prices automatically → 422.
 3. **Server-side ID generation** — UUIDs are auto-generated, avoiding the v1 bug where clients could supply duplicate IDs.
-4. **RESTful endpoints** — `POST/GET /products`, `GET/PUT/DELETE /products/{name}` follow REST conventions (not `/add`, `/all`, `/delete/{id}`).
+4. **RESTful endpoints** — `POST/GET /products`, `GET/PUT/PATCH/DELETE /products/{name}` follow REST conventions (not `/add`, `/all`, `/delete/{id}`).
 5. **Correct HTTP status codes** — 201 for creation, 404 for not found, 409 for duplicate conflict, 422 for validation errors.
 6. **Case-insensitive lookups** — Names are lowercased at validation + lookup, so `"Laptop"`, `"laptop"`, `"LAPTOP"` all work.
 7. **Whitespace trimming** — `.strip()` applied at both validation and lookup layers.
-8. **Partial updates** — `ProductUpdate` with all-Optional fields means clients can send only the fields they want to change.
+8. **Partial updates** — `PATCH /products/{name}` uses `ProductUpdate` with all-Optional fields so clients send only what they want to change. `PUT` does full replacement with `ProductCreate`.
 9. **Proper error messages** — Clear, consistent `detail` strings in all `HTTPException` responses.
 10. **Type annotations everywhere** — All functions and route handlers have return types, improving IDE support.
 
