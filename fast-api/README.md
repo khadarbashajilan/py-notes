@@ -126,28 +126,28 @@ v2/
 - SQLAlchemy ORM — defining tables, querying, inserting
 - SQLite — file-based database (persists between restarts)
 - `async def` handlers — FastAPI's intended pattern
-- `Depends()` — FastAPI dependency injection
-- Database sessions — create, commit, rollback, close
+- Creating sessions inside each function (no dependency injection)
+- `async with` context manager for safe session cleanup
 - SQLAlchemy models vs Pydantic schemas (separation of concerns)
+- Lifespan context manager for startup/shutdown events
 
 ### What I Implemented
-- **`database.py`** — SQLAlchemy engine, `SessionLocal`, `Base`
-- **SQLAlchemy `Product` model** — maps to `products` table
-- **`get_db()` dependency** — provides a session per request
-- **Async `db.py`** — all CRUD functions use `async/await`
+- **`database.py`** — SQLAlchemy engine + `async_sessionmaker`
+- **`init_db()`** — creates tables on startup via lifespan
+- **SQLAlchemy `ProductORM` model** — maps to `products` table
+- **Async `db.py`** — each function creates its own session with `async with AsyncSessionLocal() as session:`
 - **Async route handlers** — all `def` → `async def`
 - **File-based SQLite** — data persists in `products.db`
-- **`.gitignore`** — excludes `__pycache__/`, `.venv/`, `*.db`
+- **Lifespan** — `init_db()` runs on startup
 
 ### Project Structure
 ```
 v3/
-├── main.py         # Async routes with Depends(get_db)
-├── db.py           # Async CRUD functions with SQLAlchemy queries
+├── main.py         # Async routes + lifespan (no Depends)
+├── db.py           # Async CRUD — each function creates its own session
 ├── model.py        # Pydantic schemas + SQLAlchemy ORM model
-├── database.py     # Engine, SessionLocal, Base, get_db()
+├── database.py     # Engine, AsyncSessionLocal, init_db()
 ├── pyproject.toml
-├── .gitignore
 └── uv.lock
 ```
 
@@ -159,70 +159,66 @@ v3/
 | **SQLite** | Lightweight file-based database (no server needed) |
 | **Engine** | SQLAlchemy object that connects to the database |
 | **Session** | SQLAlchemy object that holds a database transaction |
-| **`Depends()`** | FastAPI function that injects dependencies into route handlers |
-| **Dependency Injection** | Pattern where a function receives its dependencies (like DB session) rather than creating them |
 | **Async / Await** | Python syntax for non-blocking code — handles many requests concurrently |
+| **Context manager** | `async with` block that auto-closes resources when done |
+| **Lifespan** | FastAPI context manager for startup/shutdown code |
 
-### Database Flow
+### Database Flow (No DI)
 ```
-Request → Route Handler → Depends(get_db) → SQLAlchemy Session → SQLite File
-                              │
-                         yields session
-                              │
-                        closes on return
+Request → Route Handler → db.py function → opens its own session → SQLite File
+                                               │
+                                          does work
+                                               │
+                                          auto-closes with `async with`
 ```
 
 ### What Improved from v2
 - Data persists across server restarts (SQLite file)
 - Async handlers (proper FastAPI pattern)
-- Dependency injection (`Depends(get_db)`)
-- No global mutable state
-- `.gitignore` for cleaner repos
+- No global mutable state (each function gets a fresh session)
+- Lifespan context manager for startup init
 
 ### Limitations
-- No tests
+- No dependency injection — can't swap DB for testing easily
 - No CORS
 - No exception handlers
 - No logging
 - No environment config
-- No Docker/CI
 
 ---
 
-## v4 — Testing & Polish (Score: 9/10)
+## v4 — PostgreSQL + DI + Infra Polish (Score: 9/10)
 
 ### What I Learned
-- pytest — writing and running automated tests
-- `TestClient` — FastAPI's test utility (uses httpx internally)
-- Testing with dependency overrides
+- PostgreSQL — production-grade database (replaces SQLite)
+- `Depends(get_db)` — FastAPI dependency injection in action
+- `get_db()` generator — yields a session per request, closes automatically
 - CORS middleware — allowing frontend apps to call the API
 - `@app.exception_handler` — custom global error responses
 - Python `logging` module — structured logs for debugging
 - `pydantic-settings` — environment configuration via `.env`
-- `Dockerfile` — containerizing the app for deployment
-- CI/CD basics — GitHub Actions for automated testing
+- `.gitignore` — excluding unnecessary files from version control
+- Feeling the **difference** between no-DI (v3) and DI (v4)
 
 ### What I Implemented
-- **`test_main.py`** — tests for all 5 CRUD endpoints
+- **PostgreSQL** — replaces SQLite with `postgresql+asyncpg://`
+- **`get_db()` dependency** — session per request via `Depends()`
+- **`Depends(get_db)` in routes** — session passed into `db.py` functions
 - **CORS middleware** — allows cross-origin requests
-- **Global exception handlers** — standardized 404, 422, 500 JSON responses
+- **Global exception handlers** — standardized 404, 500 JSON responses
 - **Logging** — request logging with timestamps
 - **`settings.py`** — configuration via `pydantic-settings` + `.env`
-- **`Dockerfile` + `.dockerignore`** — container image
-- **`.github/workflows/ci.yml`** — run tests on every push
-- **`lifespan` context manager** — startup/shutdown events
+- **`.gitignore`** — excludes `__pycache__/`, `.venv/`, `.env`
+- **Lifespan** — startup logging + `init_db()`
 
 ### Project Structure
 ```
 v4/
 ├── main.py            # Routes + CORS + exception handlers + lifespan + logging
-├── db.py              # Async CRUD functions
+├── db.py              # Async CRUD — session passed as parameter (DI)
 ├── model.py           # Pydantic schemas + SQLAlchemy ORM model
-├── database.py        # Engine, SessionLocal, get_db()
+├── database.py        # Engine, AsyncSessionLocal, get_db()
 ├── settings.py        # pydantic-settings config class
-├── test_main.py       # pytest tests for all endpoints
-├── Dockerfile         # Container build instructions
-├── .dockerignore      # Files to exclude from Docker image
 ├── .env.example       # Template for environment variables
 ├── .gitignore
 ├── pyproject.toml
@@ -232,42 +228,33 @@ v4/
 ### Key Terminology
 | Term | Meaning |
 |------|---------|
-| **pytest** | Python testing framework — finds and runs test functions |
-| **TestClient** | FastAPI's test helper — simulates HTTP requests without a server |
-| **Dependency override** | Replacing a dependency (like `get_db`) during tests |
+| **PostgreSQL** | Advanced open-source relational database (production-grade) |
+| **Asyncpg** | High-performance async driver for PostgreSQL |
+| **`Depends()`** | FastAPI function that injects dependencies into route handlers |
+| **Dependency Injection** | Pattern where a function receives its dependencies (like DB session) rather than creating them |
+| **`get_db()`** | Generator function that yields a DB session and auto-closes it |
 | **CORS** | Cross-Origin Resource Sharing — browser security mechanism |
 | **Middleware** | Code that runs on every request before/after your route handler |
 | **Exception handler** | Catches unhandled exceptions and returns a proper JSON response |
-| **Lifespan** | FastAPI context manager for startup/shutdown code |
 | **`pydantic-settings`** | Reads config from `.env` files and environment variables |
-| **Docker** | Container platform — packages your app + dependencies together |
-| **Container** | Lightweight, portable environment for running applications |
-| **CI/CD** | Continuous Integration / Continuous Deployment — automated testing + deployment |
-| **GitHub Actions** | GitHub's CI/CD service — runs workflows on push/PR |
 
-### Test Example
-```python
-from fastapi.testclient import TestClient
-from main import app
-
-client = TestClient(app)
-
-def test_create_product():
-    response = client.post("/products", json={
-        "name": "laptop", "price": 999, "description": "gaming laptop"
-    })
-    assert response.status_code == 201
-    assert response.json()["name"] == "laptop"
+### Database Flow (With DI)
+```
+Request → Route Handler → Depends(get_db) → PostgreSQL
+                              │
+                         yields session
+                              │
+                        closes on return
 ```
 
 ### What Improved from v3
-- Full test coverage (confidence to refactor)
+- Dependency injection — session is a parameter, not created inside each function
+- PostgreSQL — production-grade database
 - CORS enabled (frontend can call the API)
 - Beautiful error responses (not raw tracebacks)
 - Structured logging (debug production issues)
 - Environment config (no hardcoded secrets)
-- Containerized (runs anywhere)
-- Automated tests on push (CI)
+- `.gitignore` for cleaner repos
 
 ---
 
@@ -280,15 +267,13 @@ def test_create_product():
 | Correct HTTP codes | ✗ | ✓ | ✓ | ✓ |
 | Persistence (DB) | ✗ | ✗ | ✓ | ✓ |
 | Async handlers | ✗ | ✗ | ✓ | ✓ |
-| Dependency Injection | ✗ | ✗ | ✓ | ✓ |
-| Tests | ✗ | ✗ | ✗ | ✓ |
+| Dependency Injection | ✗ | ✗ | ✗ | ✓ |
 | CORS | ✗ | ✗ | ✗ | ✓ |
 | Error handlers | ✗ | ✗ | ✗ | ✓ |
 | Logging | ✗ | ✗ | ✗ | ✓ |
 | Environment config | ✗ | ✗ | ✗ | ✓ |
-| Docker | ✗ | ✗ | ✗ | ✓ |
-| CI | ✗ | ✗ | ✗ | ✓ |
-| **Score** | **4/10** | **6/10** | **8/10** | **9/10** |
+| `.gitignore` | ✗ | ✗ | ✗ | ✓ |
+| **Score** | **4/10** | **6/10** | **7/10** | **9/10** |
 
 ---
 
@@ -303,20 +288,19 @@ def test_create_product():
 | **SQLAlchemy** | Python ORM for working with relational databases |
 | **ORM** | Object-Relational Mapping — maps Python classes to database tables |
 | **SQLite** | File-based relational database (no server required) |
+| **PostgreSQL** | Advanced open-source relational database (production-grade) |
+| **Asyncpg** | High-performance async PostgreSQL driver for Python |
 | **Session** | A single database transaction/connection |
 | **Dependency Injection** | Pattern where dependencies are passed in, not created internally |
 | **`Depends()`** | FastAPI's built-in DI mechanism |
 | **Async/Await** | Python syntax for concurrent, non-blocking code |
-| **`@field_validator`** | Pydantic decorator that validates/c transforms a specific field |
+| **`@field_validator`** | Pydantic decorator that validates/transforms a specific field |
 | **`@classmethod`** | Method that receives the class (`cls`) instead of an instance (`self`) |
 | **Middleware** | Code that processes every request/response in the pipeline |
 | **CORS** | Security mechanism that controls which websites can call your API |
-| **TestClient** | FastAPI's HTTP test simulator (uses httpx) |
-| **pytest** | Popular Python testing framework |
-| **pydantic-settings** | Reads config from `.env` files with validation |
-| **Docker** | Platform for packaging apps into portable containers |
-| **GitHub Actions** | CI/CD service that runs automated workflows |
+| **`pydantic-settings`** | Reads config from `.env` files with validation |
 | **Lifespan** | FastAPI's startup/shutdown event system |
+| **Context manager** | `async with` block that auto-closes resources |
 
 ---
 
@@ -328,24 +312,24 @@ v1:                   v2:                       v3:                        v4:
 │  main.py │          │  main.py │              │  main.py │               │  main.py │
 │ (routes) │          │ (routes) │              │ (routes) │               │ (routes) │
 │ (models) │          │          │              │   async  │               │   async  │
-│ (logic)  │          ├──────────┤              │ Depends  │               │ CORS     │
+│ (logic)  │          ├──────────┤              │ lifespan │               │ CORS     │
 └──────────┘          │  db.py   │              ├──────────┤               │ logging  │
                       │ (logic)  │              │  db.py   │               │ handlers │
-                      ├──────────┤              │  async   │               ├──────────┤
-                      │ model.py │              ├──────────┤               │  db.py   │
-                      │ (schemas)│              │ model.py │               │  async   │
-                      └──────────┘              │ (schemas)│               ├──────────┤
-                                                │ (ORM)    │               │ model.py │
-                                                ├──────────┤               │ (schemas)│
-                                                │database  │               │ (ORM)    │
-                                                │ .py      │               ├──────────┤
-                                                └──────────┘               │database  │
+                      ├──────────┤              │  async   │               │ Depends  │
+                      │ model.py │              │  no DI   │               ├──────────┤
+                      │ (schemas)│              ├──────────┤               │  db.py   │
+                      └──────────┘              │ model.py │               │  async   │
+                                                │ (schemas)│               │  with DI │
+                                                │ (ORM)    │               ├──────────┤
+                                                ├──────────┤               │ model.py │
+                                                │database  │               │ (schemas)│
+                                                │ .py      │               │ (ORM)    │
+                                                └──────────┘               ├──────────┤
+                                                                           │database  │
                                                                            │ .py      │
+                                                                           │ (get_db) │
                                                                            ├──────────┤
                                                                            │settings  │
-                                                                           │ .py      │
-                                                                           ├──────────┤
-                                                                           │test_main │
                                                                            │ .py      │
                                                                            └──────────┘
 ```
@@ -354,11 +338,13 @@ v1:                   v2:                       v3:                        v4:
 
 ## Final Thoughts
 
-This journey took me from writing a single-file prototype (v1) to a fully tested, containerized, production-ready API (v4). Each version taught a core skill:
+This journey took me from writing a single-file prototype (v1) to a polished, professional-grade API with dependency injection and PostgreSQL (v4). Each version taught a core skill:
 
 1. **v1** — Getting something working
-2. **v2** — Writing clean, validated APIs
-3. **v3** — Using databases and async properly
-4. **v4** — Testing, hardening, and deploying
+2. **v2** — Writing clean, validated REST APIs
+3. **v3** — Using databases and async properly (no DI)
+4. **v4** — Learning dependency injection, PostgreSQL, and infra polish
+
+Building the same CRUD API with and without DI (v3 vs v4) was the fastest way to understand *why* the dependency injection pattern exists — and when to use each approach.
 
 The next steps beyond v4 would be: authentication (JWT), background tasks, WebSockets, GraphQL, and cloud deployment (AWS/GCP/Azure).
