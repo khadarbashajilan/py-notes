@@ -55,5 +55,25 @@ def main():
     print("\n--- Test Complete ---")
 
 
+# ============================================================
+# CONCEPT: Encapsulation & Access Modifiers in Python
+# ------------------------------------------------------------
+# Encapsulation = bundling data + methods inside a class,
+# and controlling access to internal state.
+#
+# Three access levels demonstrated:
+#   Public (name)      — accessible from anywhere.
+#   Protected (_level) — single underscore; convention only,
+#                        signals "internal use, please don't
+#                        touch directly."
+#   Private (__password) — double underscore triggers name
+#                          mangling to _ClassName__attr,
+#                          preventing accidental access.
+#
+# Name mangling makes it harder (but not impossible) for
+# external code to access private attributes, reducing
+# accidental misuse.
+# ============================================================
+
 if __name__ == "__main__":
     main()

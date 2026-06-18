@@ -210,5 +210,21 @@ def main():
     print("\nAll tests passed!")
 
 
+# ============================================================
+# CONCEPT: Validation via Property Setters
+# ------------------------------------------------------------
+# Property setters allow us to intercept attribute assignment
+# and enforce rules — type checks, length limits, format
+# matching via regex (e.g., \w{3,20}), and domain structure.
+#
+# User   — validates username: string, 3-20 alphanumeric/_
+# Email  — validates email: exactly one @, 3-15 char local
+#          part, valid domain with dot, no spaces.
+#
+# On failure, the setter raises TypeError or ValueError
+# and the internal state remains unchanged (the old value
+# is preserved — demonstrated in tests).
+# ============================================================
+
 if __name__ == "__main__":
     main()

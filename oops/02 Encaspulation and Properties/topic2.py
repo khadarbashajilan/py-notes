@@ -196,5 +196,24 @@ def main():
     print("\nAll tests passed!")
 
 
+# ============================================================
+# CONCEPT: Python @property Decorator
+# ------------------------------------------------------------
+# The @property decorator turns a method into a read-only
+# attribute accessor, while @<name>.setter provides write
+# access with built-in validation.
+#
+# Three property patterns demonstrated:
+#   Read-only    — e.g., account_number, name (no setter).
+#   Validated    — e.g., balance, grade, width, height
+#                  (setter runs checks before assigning).
+#   Computed     — e.g., is_overdrawn, letter_grade,
+#                  is_passing, area, perimeter, is_square
+#                  (derived from other attributes).
+#
+# This lets us keep a clean dot-access API while running
+# logic under the hood.
+# ============================================================
+
 if __name__ == "__main__":
     main()

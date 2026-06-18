@@ -249,3 +249,27 @@ if __name__ == "__main__":
     print("=" * 50)
     for acc in [alice, bob, diana, eve]:
         print(f"   {acc.get_balance_info()}")
+
+# ============================================================
+# Concept: @classmethod vs @staticmethod vs Instance Methods
+# ============================================================
+# Instance methods (def method(self, ...)) operate on instance
+# data and need self. Class methods (@classmethod, def method(cls, ...))
+# receive the class as first argument and are used for factory
+# methods or class-level logic. Static methods (@staticmethod,
+# def method(...)) receive no special first argument and behave
+# like plain functions grouped inside the class for organization.
+#
+# Key Terminology:
+#   - @classmethod:  Method bound to the class, not the instance
+#                    (receives cls as first argument)
+#   - @staticmethod: Method that does not receive self or cls;
+#                    acts like a regular function in the class
+#   - Instance Method: Regular method that receives self and
+#                      operates on instance attributes
+#   - Factory Method: A class method that creates & returns
+#                     instances (e.g., create_account, from_string)
+#   - Class Attribute: Shared across all instances (e.g., bank_name)
+#   - Private Convention: Prefix _ indicates internal use (e.g.,
+#                         _next_account_number)
+# ============================================================"

@@ -4,6 +4,7 @@ import sys
 
 
 class DigitalWallet:
+    """Demonstrates private attributes, encapsulated transaction history, and deep copy safety."""
 
     def __init__(self, userid, username, initial_balance):
         """Initialize wallet with user details and optional initial balance."""
@@ -172,6 +173,25 @@ def main():
 
     print("\nAll tests passed!")
 
+
+# ============================================================
+# CONCEPT: Private Data & Defensive Copying
+# ------------------------------------------------------------
+# DigitalWallet uses private attributes (__balance,
+# __transaction_history, __transaction_counter) to prevent
+# external code from tampering with internal state.
+#
+# Key encapsulation techniques:
+#   1. Private double-underscore attributes enforce name
+#      mangling so internals stay hidden.
+#   2. A read-only @property (balance) exposes state
+#      without granting write access.
+#   3. get_transaction_history() uses deepcopy() so
+#      callers receive a snapshot — mutating the returned
+#      list does NOT affect the wallet's internal records.
+#   4. An internal helper __add_transaction() centralises
+#      record-keeping logic and auto-increments txn IDs.
+# ============================================================
 
 if __name__ == "__main__":
     main()

@@ -152,3 +152,36 @@ for i, payment in enumerate(payments, 1):
             print(f"{i}. ✗ Invalid credit card number")
         elif isinstance(payment, PayPalPayment):
             print(f"{i}. ✗ Invalid PayPal email")
+
+
+"""
+================================================================================
+CONCEPT: POLYMORPHISM & METHOD OVERRIDING
+================================================================================
+
+1. Polymorphism:
+   - The ability of different classes to be treated as instances of the same 
+     class through a common interface.
+   - All payment types (CreditCardPayment, PayPalPayment) are treated as 
+     `Payment` objects, yet each behaves differently when `process()` or 
+     `validate()` is called.
+
+2. Method Overriding:
+   - Child classes redefine methods from the parent with their own implementation.
+   - `CreditCardPayment.process()` vs `PayPalPayment.process()` — same method 
+     name, different behavior.
+
+3. super() Delegation:
+   - `super().__init__(amount)` in child constructors reuses the parent's 
+     initialization logic, avoiding code duplication.
+
+4. isinstance():
+   - Built-in function to check an object's type at runtime.
+   - Used here to give specific error messages based on payment type.
+
+5. Duck Typing / Polymorphic Dispatch:
+   - The loop calls `payment.validate()` and `payment.process()` without 
+     caring about the concrete class. Python's runtime dispatches to the 
+     correct method based on the actual object type.
+================================================================================
+"""

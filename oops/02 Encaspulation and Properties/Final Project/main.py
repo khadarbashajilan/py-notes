@@ -58,5 +58,3 @@ class Account:
             for k,v in t.items():
                 print(f"{k} - {v}")
             print()
-
-            
