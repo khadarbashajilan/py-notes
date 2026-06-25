@@ -1,0 +1,3 @@
+hi...
+<shapes.circle.Circle object at 0x70421592c6e0> | Area: 78.54 | Perimeter: 31.42
+<shapes.square.Square object at 0x70421592c830> | Area: 16.00 | Perimeter: 16.00
