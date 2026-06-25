@@ -52,7 +52,7 @@ class Rectangle(Shape):
         Returns:
             float: The perimeter computed as 2 * (length + width).
         """
-        return (2 * self.length) + (2 * self.width)
+        return 2 * (self.length + self.width)
 
     def describe(self):
         """Return a string description of the rectangle.
@@ -60,4 +60,16 @@ class Rectangle(Shape):
         Returns:
             str: A formatted string containing length, width, area, and perimeter.
         """
-        return f"Rectangle(Length = {self.length}, Width = {self.width}, Area = {self.area()}, Perimeter = {self.perimeter()})"
+        return f"Rectangle(Length = {self.length}, Width = {self.width}, Area = {self.area():.2f}, Perimeter = {self.perimeter():.2f})"
+
+    def __str__(self):
+        return "Rectangle(Length = {:.2f}, Width = {:.2f})".format(self.length, self.width)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __eq__(self, other):
+        return super().__eq__(other)
+
+    def __lt__(self, other):
+        return super().__lt__(other)

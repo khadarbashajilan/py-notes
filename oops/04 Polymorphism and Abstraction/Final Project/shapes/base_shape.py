@@ -45,12 +45,38 @@ class Shape(ABC):
     def describe(self):
         """Return a string description of the shape.
 
-        The description includes the shape type, its dimensions, area,
-        and perimeter in a human-readable format.
+        The description includes the shape type, its dimensions, area, and perimeter in a human-readable format.
 
         Returns:
             str: A formatted string describing the shape and its properties.
         """
         pass
 
+    # ------------------------------------------------------------------
+    #  Rich comparison helpers
+    # ------------------------------------------------------------------
+    def __eq__(self, other):
+        """Two shapes are equal if they have the same area (regardless of type).
 
+        Args:
+            other: Another Shape instance to compare against.
+
+        Returns:
+            bool: True if areas match (within floating-point tolerance), else False.
+        """
+        if not isinstance(other, Shape):
+            return NotImplemented
+        return abs(self.area() - other.area()) < 1e-9
+
+    def __lt__(self, other):
+        """Compare shapes by area for sorting.
+
+        Args:
+            other: Another Shape instance to compare against.
+
+        Returns:
+            bool: True if this shape's area is less than the other's area.
+        """
+        if not isinstance(other, Shape):
+            return NotImplemented
+        return self.area() < other.area()

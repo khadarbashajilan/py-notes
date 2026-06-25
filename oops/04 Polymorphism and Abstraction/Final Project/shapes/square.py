@@ -56,6 +56,16 @@ class Square(Shape):
         Returns:
             str: A formatted string containing side, area, and perimeter.
         """
-        return f"Square(Side = {self.side}, Area = {self.area()}, Perimeter = {self.perimeter()})"
+        return f"Square(Side = {self.side}, Area = {self.area():.2f}, Perimeter = {self.perimeter():.2f})"
 
+    def __str__(self):
+        return "Square(Side = {:.2f})".format(self.side)
 
+    def __repr__(self):
+        return self.__str__()
+
+    def __eq__(self, other):
+        return super().__eq__(other)
+
+    def __lt__(self, other):
+        return super().__lt__(other)

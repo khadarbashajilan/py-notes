@@ -33,6 +33,7 @@ class Circle(Shape):
 
         Args:
             radius (float): The radius of the circle. Must be positive.
+
         """
         self.radius = radius
 
@@ -41,6 +42,7 @@ class Circle(Shape):
 
         Returns:
             float: The area computed as pi * radius^2.
+
         """
         return pi * (self.radius ** 2)
 
@@ -49,6 +51,7 @@ class Circle(Shape):
 
         Returns:
             float: The circumference computed as 2 * pi * radius.
+
         """
         return pi * 2 * self.radius
 
@@ -60,4 +63,14 @@ class Circle(Shape):
         """
         return f"Circle(radius = {self.radius}, area = {self.area():.2f}, perimeter = {self.perimeter():.2f})"
 
+    def __str__(self):
+        return "Circle(radius = {:.2f})".format(self.radius)
 
+    def __repr__(self):
+        return self.__str__()
+
+    def __eq__(self, other):
+        return super().__eq__(other)
+
+    def __lt__(self, other):
+        return super().__lt__(other)
