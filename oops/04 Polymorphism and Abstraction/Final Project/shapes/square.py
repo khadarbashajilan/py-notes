@@ -1,65 +1,29 @@
-"""
-Square Shape Module.
-
-This module provides the Square class, a concrete implementation of the
-Shape abstract base class. A Square is defined by its side length and
-supports area, perimeter, and description operations.
-
-Classes:
-    Square: Represents a square with a given side length.
-"""
+"""Square shape implementation."""
 
 from .base_shape import Shape
 
 
 class Square(Shape):
-    """A concrete shape class representing a square.
-
-    A square is a quadrilateral with four equal sides and four right angles.
-
-    Attributes:
-        side (float): The length of one side of the square.
-
-    Methods:
-        area(): Returns side^2.
-        perimeter(): Returns 4 * side.
-        describe(): Returns a formatted string with all square details.
-    """
+    """A square defined by its side length."""
 
     def __init__(self, side):
-        """Initialize a Square with the given side length.
-
-        Args:
-            side (float): The length of each side. Must be positive.
-        """
+        """Initialize a Square with the given side length."""
         self.side = side
 
     def area(self):
-        """Calculate the area of the square.
-
-        Returns:
-            float: The area computed as side^2.
-        """
+        """Return the area (side²)."""
         return self.side ** 2
 
     def perimeter(self):
-        """Calculate the perimeter of the square.
-
-        Returns:
-            float: The perimeter computed as 4 * side.
-        """
+        """Return the perimeter (4 * side)."""
         return 4 * self.side
 
     def describe(self):
-        """Return a string description of the square.
-
-        Returns:
-            str: A formatted string containing side, area, and perimeter.
-        """
-        return f"Square(Side = {self.side}, Area = {self.area():.2f}, Perimeter = {self.perimeter():.2f})"
+        """Return a formatted description with dimensions, area, and perimeter."""
+        return str(self)
 
     def __str__(self):
-        return "Square(Side = {:.2f})".format(self.side)
+        return "Square(side = {:.2f})".format(self.side)
 
     def __repr__(self):
         return self.__str__()

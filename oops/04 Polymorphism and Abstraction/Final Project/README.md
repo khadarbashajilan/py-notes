@@ -360,3 +360,27 @@ Square(Side = 4, Area = 16, Perimeter = 16) | Area: 16.00 | Perimeter: 16.00
 | **Context Manager** | Safely manage resources (files) with `with` statement |
 | **`@contextmanager`** | Simpler function-based alternative to class context managers |
 | **`@abstractmethod`** | Force subclasses to implement required methods |
+
+---
+
+## Equality_testing_and_sorting_results
+
+After running `main.py`:
+
+```
+--- Shape Info ---
+Circle(radius = 5.00): Area = 78.54, Perimeter = 31.42
+Square(side = 4.00): Area = 16.00, Perimeter = 16.00
+Rectangle(length = 4.00, width = 4.00): Area = 16.00, Perimeter = 16.00
+Triangle(base = 3.00, height = 4.00): Area = 6.00, Perimeter = 12.00
+
+--- Testing Equality & Sorting ---
+r.area() = 16.00, r_same.area() = 16.00
+r == r_same: True
+
+Shapes sorted by area:
+  Triangle(base = 3.00, height = 4.00): Area = 6.00
+  Square(side = 4.00): Area = 16.00
+  Rectangle(length = 4.00, width = 4.00): Area = 16.00
+  Circle(radius = 5.00): Area = 78.54
+```

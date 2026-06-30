@@ -1,75 +1,38 @@
-"""
-Triangle Shape Module.
-
-This module provides the Triangle class, a concrete implementation of the
-Shape abstract base class. A Triangle is defined by its base, height, and
-two side lengths, and supports area, perimeter, and description operations.
-
-Classes:
-    Triangle: Represents a triangle with given dimensions.
-"""
+"""Triangle shape implementation."""
 
 from .base_shape import Shape
 
 
 class Triangle(Shape):
-    """A concrete shape class representing a triangle.
-
-    A triangle is a polygon with three edges and three vertices.
-    This implementation uses base and height for area calculation
-    and three side lengths for perimeter calculation.
-
-    Attributes:
-        a (float): The length of side A.
-        b (float): The length of side B (base).
-        c (float): The length of side C.
-        h (float): The height of the triangle (perpendicular to base).
-
-    Methods:
-        area(): Returns 0.5 * base * height.
-        perimeter(): Returns the sum of all three sides.
-        describe(): Returns a formatted string with all triangle details.
-    """
+    """A triangle defined by its base, height, and two other side lengths."""
 
     def __init__(self, base, height, side_a, side_c):
-        """Initialize a Triangle with the given dimensions.
-
-        Args:
-            base (float): The base length of the triangle. Must be positive.
-            height (float): The height perpendicular to the base. Must be positive.
-            side_a (float): The length of side A. Must be positive.
-            side_c (float): The length of side C. Must be positive.
-        """
-        self.a = side_a
-        self.b = base
-        self.c = side_c
-        self.h = height
+        """Initialize a Triangle with the given dimensions."""
+        self.base = base
+        self.height = height
+        self.side_a = side_a
+        self.side_c = side_c
 
     def area(self):
-        """Calculate the area of the triangle.
-
-        Uses the formula: area = 0.5 * base * height.
-
-        Returns:
-            float: The area of the triangle.
-        """
-        return 0.5 * self.b * self.h
+        """Return the area (0.5 * base * height)."""
+        return 0.5 * self.base * self.height
 
     def perimeter(self):
-        """Calculate the perimeter of the triangle.
-
-        Returns:
-            float: The sum of all three side lengths.
-        """
-        return self.a + self.b + self.c
+        """Return the perimeter (sum of all three sides)."""
+        return self.side_a + self.base + self.side_c
 
     def describe(self):
-        """Return a string description of the triangle.
+        """Return a formatted description with dimensions, area, and perimeter."""
+        return str(self)
 
-        Returns:
-            str: A formatted string containing all sides, height, area, and perimeter.
-        """
-        return f"Triangle(Side A = {self.a}, Side B = {self.b}, Side C = {self.c}, Height = {self.h}, Area = {self.area()}, Perimeter = {self.perimeter()})"
+    def __str__(self):
+        return "Triangle(base = {:.2f}, height = {:.2f})".format(self.base, self.height)
 
+    def __repr__(self):
+        return self.__str__()
 
+    def __eq__(self, other):
+        return super().__eq__(other)
 
+    def __lt__(self, other):
+        return super().__lt__(other)

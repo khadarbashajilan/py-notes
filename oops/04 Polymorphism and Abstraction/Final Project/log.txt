@@ -1,3 +1,7 @@
 hi...
 <shapes.circle.Circle object at 0x70421592c6e0> | Area: 78.54 | Perimeter: 31.42
 <shapes.square.Square object at 0x70421592c830> | Area: 16.00 | Perimeter: 16.00
+Circle(radius = 5.00) | Area: 78.54 | Perimeter: 31.42
+Square(side = 4.00) | Area: 16.00 | Perimeter: 16.00
+Rectangle(length = 4.00, width = 4.00) | Area: 16.00 | Perimeter: 16.00
+Triangle(base = 3.00, height = 4.00) | Area: 6.00 | Perimeter: 13.00
