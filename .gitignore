@@ -1,6 +1,36 @@
-.venv
-*.db
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project-specific
+*.db
 session*
 prompt*
+
+# Lock files (keep if you want to track them)
+# uv.lock
+
+# Python version files
+.python-version
