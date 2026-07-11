@@ -7,7 +7,9 @@ __pycache__/
 dist/
 build/
 *.egg
-*/uploads/*
+
+# Uploaded files (avatars)
+**/uploads/
 
 # Virtual environments
 .venv/
